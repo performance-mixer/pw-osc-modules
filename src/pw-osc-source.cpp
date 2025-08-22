@@ -167,6 +167,9 @@ int lo_message_handler(const char *path, const char *types, lo_arg **argv,
     }
   }
 
+  spa_pod_builder_pop(&builder, &struct_frame);
+  message.pod = static_cast<spa_pod*>(spa_pod_builder_pop(
+    &builder, &object_frame));
   const auto &queue = impl->queues[route_prefix];
   queue->push(message);
 
@@ -326,10 +329,13 @@ int main(int argc, char **argv) {
                 argc, argv);
 
   lo_server server = lo_server_new("1337", lo_error_handler);
-  const auto data_tuple = std::make_tuple("/cmp/1", &impl);
-  lo_server_add_method(server, "/cmp/1", nullptr, lo_message_handler,
+  const auto data_tuple = std::make_tuple(std::string("/cmp/1"), &impl);
+  lo_server_add_method(server, "/cmp/*", nullptr, lo_message_handler,
                        &data_tuple);
 
-  t.join();
+  while (true) {
+    lo_server_recv(server);
+  }
+
   return 0;
 }
